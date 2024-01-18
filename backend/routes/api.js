@@ -21,40 +21,30 @@ router.get('/coordonneespointdedepot', (req, res) => {
     if (req.session.user.type !== 'structure') return res.status(403).send('Not a structure');
 
     // Get the coordonneespointdedepot
-    const coordonneespointdedepot = database.query('SELECT ST_X(coordonnees) AS longitude, ST_Y(coordonnees) AS latitude FROM point_de_depot', [req.session.user.id]);
+    const coordonneespointdedepot = database.query('SELECT ST_X(coordonnees) AS longitude, ST_Y(coordonnees) AS latitude FROM point_de_depot');
     if (!coordonneespointdedepot) return res.status(500).send('Database error');
 
     // Return the coordonneespointdedepot
     return res.json(coordonneespointdedepot);
 });
 
-router.get('/abonnements', (req, res) => {
+router.put('/abonnement/:id', (req, res) => {
     // Make sure we're logged in as a structure
     if (!req.session.user) return res.status(401).send('Not logged in');
-    if (req.session.user.type !== 'structure') return res.status(403).send('Not a structure');
+    if (req.session.user.type !== 'adherent') return res.status(403).send('Not an member');
 
-    // Get the abonnements
-    const abonnements = database.query('SELECT * FROM abonnement WHERE structure = ?', [req.session.user.id]);
+    if (!req.body.type) return res.status(400).send('Missing type');
+    if (!req.body.montant) return res.status(400).send('Missing montant');
+    if (!req.params.id) return res.status(400).send('Missing id');
+
+    const abonnements = database.query('UPDATE abonnement SET type = ?, montant = ? WHERE id = ?', [req.body.type, req.body.montant, req.params.id]);
     if (!abonnements) return res.status(500).send('Database error');
 
     // Return the abonnements
     return res.json(abonnements);
 });
 
-router.put('/editabonnements/:id', (req, res) => {
-    // Make sure we're logged in as a structure
-    if (!req.session.user) return res.status(401).send('Not logged in');
-    if (req.session.user.type !== 'structure') return res.status(403).send('Not a structure');
-
-    // Get the abonnements
-    const abonnements = database.query('UPDATE abonnement SET type=?, montant=? WHERE id=?', [req.session.user.id]);
-    if (!abonnements) return res.status(500).send('Database error');
-
-    // Return the abonnements
-    return res.json(abonnements);
-});
-
-router.get('/adherents-de-structure', (req, res) => {
+router.get('/structure/adherents', (req, res) => {
     // Make sure we're logged in as a structure
     if (!req.session.user) return res.status(401).send('Not logged in');
     if (req.session.user.type !== 'structure') return res.status(403).send('Not a structure');
@@ -72,7 +62,7 @@ router.get('/adherents-de-structure', (req, res) => {
     return res.json(adherents);
 });
 
-router.get('/calendrier-adherent', (req, res) => {
+router.get('/calendrier', (req, res) => {
     // Make sure we're logged in as a adherent
     if (!req.session.user) return res.status(401).send('Not logged in');
     if (req.session.user.type !== 'adherent') return res.status(403).send('Not a adherent');
@@ -90,15 +80,13 @@ router.get('/calendrier-adherent', (req, res) => {
     return res.json(calendrier);
 });
 
-router.get('/points-depot', (req, res) => {
+router.get('/depots', (req, res) => {
     // Make sure we're logged in as a adherent
     if (!req.session.user) return res.status(401).send('Not logged in');
     if (req.session.user.type !== 'adherent') return res.status(403).send('Not a adherent');
 
     // Get the points de depot
-    const points_depot = database.query(`
-    SELECT * FROM point_de_depot
-  `, [req.session.user.id]);
+    const points_depot = database.query(`SELECT * FROM point_de_depot`);
     if (!points_depot) return res.status(500).send('Database error');
 
     // Return the points de depot
