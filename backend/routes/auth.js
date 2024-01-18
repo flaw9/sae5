@@ -28,4 +28,11 @@ router.post('/login/structure', (req, res) => {
     return res.sendStatus(200);
 });
 
+router.get('/logout', (req, res) => {
+    if (!req.session.user) return res.status(401).send('Not logged in');
+    
+    req.session.destroy();
+    return res.sendStatus(200);
+});
+
 module.exports = router;

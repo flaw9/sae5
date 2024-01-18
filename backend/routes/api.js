@@ -29,7 +29,7 @@ router.get('/coordonneespointdedepot', (req, res) => {
 });
 
 router.put('/abonnement/:id', (req, res) => {
-    // Make sure we're logged in as a structure
+    // Make sure we're logged in as a member
     if (!req.session.user) return res.status(401).send('Not logged in');
     if (req.session.user.type !== 'adherent') return res.status(403).send('Not an member');
 
@@ -63,7 +63,7 @@ router.get('/structure/adherents', (req, res) => {
 });
 
 router.get('/calendrier', (req, res) => {
-    // Make sure we're logged in as a adherent
+    // Make sure we're logged in as a member
     if (!req.session.user) return res.status(401).send('Not logged in');
     if (req.session.user.type !== 'adherent') return res.status(403).send('Not a adherent');
 
@@ -81,7 +81,7 @@ router.get('/calendrier', (req, res) => {
 });
 
 router.get('/depots', (req, res) => {
-    // Make sure we're logged in as a adherent
+    // Make sure we're logged in as a member
     if (!req.session.user) return res.status(401).send('Not logged in');
     if (req.session.user.type !== 'adherent') return res.status(403).send('Not a adherent');
 
@@ -92,5 +92,21 @@ router.get('/depots', (req, res) => {
     // Return the points de depot
     return res.json(points_depot);
 });
+
+router.get('/adherent/:id', (req, res) => {
+    // Make sure we're logged in as a structure
+    if (!req.session.user) return res.status(401).send('Not logged in');
+    if (req.session.user.type !== 'structure') return res.status(403).send('Not a structure');
+
+    // Get the adherent
+    const adherent = database.query('SELECT * FROM adherent WHERE id = ?', [req.params.id]);
+    if (!adherent) return res.status(500).send('Database error');
+
+    if (adherent.id_structure !== req.session.user.id) return res.status(403).send('Not your member');
+
+    // Return the adherent
+    return res.json(adherent);
+});
+
 
 module.exports = router;
