@@ -15,4 +15,94 @@ router.get('/abonnements', (req, res) => {
     return res.json(abonnements);
 });
 
+router.get('/coordonneespointdedepot', (req, res) => {
+    // Make sure we're logged in as a structure
+    if (!req.session.user) return res.status(401).send('Not logged in');
+    if (req.session.user.type !== 'structure') return res.status(403).send('Not a structure');
+
+    // Get the coordonneespointdedepot
+    const coordonneespointdedepot = database.query('SELECT ST_X(coordonnees) AS longitude, ST_Y(coordonnees) AS latitude FROM point_de_depot', [req.session.user.id]);
+    if (!coordonneespointdedepot) return res.status(500).send('Database error');
+
+    // Return the coordonneespointdedepot
+    return res.json(coordonneespointdedepot);
+});
+
+router.get('/abonnements', (req, res) => {
+    // Make sure we're logged in as a structure
+    if (!req.session.user) return res.status(401).send('Not logged in');
+    if (req.session.user.type !== 'structure') return res.status(403).send('Not a structure');
+
+    // Get the abonnements
+    const abonnements = database.query('SELECT * FROM abonnement WHERE structure = ?', [req.session.user.id]);
+    if (!abonnements) return res.status(500).send('Database error');
+
+    // Return the abonnements
+    return res.json(abonnements);
+});
+
+router.put('/editabonnements/:id', (req, res) => {
+    // Make sure we're logged in as a structure
+    if (!req.session.user) return res.status(401).send('Not logged in');
+    if (req.session.user.type !== 'structure') return res.status(403).send('Not a structure');
+
+    // Get the abonnements
+    const abonnements = database.query('UPDATE abonnement SET type=?, montant=? WHERE id=?', [req.session.user.id]);
+    if (!abonnements) return res.status(500).send('Database error');
+
+    // Return the abonnements
+    return res.json(abonnements);
+});
+
+router.get('/adherents-de-structure', (req, res) => {
+    // Make sure we're logged in as a structure
+    if (!req.session.user) return res.status(401).send('Not logged in');
+    if (req.session.user.type !== 'structure') return res.status(403).send('Not a structure');
+
+    // Get the adherents
+    const adherents = database.query(`
+    SELECT adherent.*, abonnements_en_cours.*
+    FROM adherent
+    LEFT JOIN abonnements_en_cours ON adherent.id = abonnements_en_cours.id_adherent
+    WHERE adherent.id_structure = ?
+    `, [req.session.user.id]);
+    if (!adherents) return res.status(500).send('Database error');
+
+    // Return the adherents
+    return res.json(adherents);
+});
+
+router.get('/calendrier-adherent', (req, res) => {
+    // Make sure we're logged in as a adherent
+    if (!req.session.user) return res.status(401).send('Not logged in');
+    if (req.session.user.type !== 'adherent') return res.status(403).send('Not a adherent');
+
+    // Get the calendrier
+    const calendrier = database.query(`
+    SELECT jours_livrables.jour_semaine
+    FROM jours_livrables
+    JOIN adherent ON jours_livrables.id_structure = adherent.id_structure
+    WHERE adherent.id = ?
+  `, [req.session.user.id]);
+    if (!calendrier) return res.status(500).send('Database error');
+
+    // Return the calendrier
+    return res.json(calendrier);
+});
+
+router.get('/points-depot', (req, res) => {
+    // Make sure we're logged in as a adherent
+    if (!req.session.user) return res.status(401).send('Not logged in');
+    if (req.session.user.type !== 'adherent') return res.status(403).send('Not a adherent');
+
+    // Get the points de depot
+    const points_depot = database.query(`
+    SELECT * FROM point_de_depot
+  `, [req.session.user.id]);
+    if (!points_depot) return res.status(500).send('Database error');
+
+    // Return the points de depot
+    return res.json(points_depot);
+});
+
 module.exports = router;
